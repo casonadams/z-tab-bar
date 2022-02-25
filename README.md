@@ -12,14 +12,15 @@ cargo build --release
 
 ### setup
 
-Create a common place for plugins
+- Create a common place for plugins
 
 ```sh
 mkdir -p ~/.zellij/plugins
 ```
 
-Update `~/.config/zellij/layouts/default.yaml`
-**NOTE** USER_HOME needs to be the full path for now
+- Update `~/.config/zellij/layouts/default.yaml`
+
+- **NOTE** USER_HOME needs to be the full path for now
 
 ```yaml
 ---
@@ -34,14 +35,14 @@ template:
         Fixed: 1
       run:
         plugin:
-          location: "file:USER_HOME/.zellij/plugins/tab-bar.wasm"
+          location: "file:USER_HOME/.zellij/plugins/z-tab-bar.wasm"
 session:
   name: "0"
   attach: true
 ```
 
-Copy complied plugin to the plugins directory
+- Copy complied plugin to the plugins directory
 
 ```sh
-cp target/wasm32-wasi/release/tab-bar.wasm ~/.zellij/plugins
+cp target/wasm32-wasi/release/z-tab-bar.wasm ~/.zellij/plugins
 ```

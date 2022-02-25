@@ -1,13 +1,13 @@
 [package]
-name = "tab-bar"
+name = "z-tab-bar"
 version = "0.1.0"
-authors = ["Jonah Caplan <jonahcaplan@gmail.com>"]
+authors = ["Cason Adams <casonadams@gmail.com>"]
 edition = "2021"
 license = "MIT"
 
 [dependencies]
-colored = "2"
-ansi_term = "0.12"
-unicode-width = "0.1.8"
+colored = "*"
+ansi_term = "*"
+unicode-width = "*"
 zellij-tile = "*"
 zellij-tile-utils = "*"
