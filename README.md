@@ -2,8 +2,7 @@
 
 zellij tab-bar plugin that is similar to tmux default status line
 
-![image](https://user-images.githubusercontent.com/17597548/155815705-04c0155c-5a48-4f03-85eb-585c05cd0397.png)
-
+<img width="718" alt="image" src="https://user-images.githubusercontent.com/17597548/155839636-1a14d830-320f-4dc4-85eb-20a4ea7e2431.png">
 
 ## building
 
