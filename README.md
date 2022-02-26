@@ -51,7 +51,7 @@ themes:
   default:
     fg: 7
     bg: 24
-    black: 0
+    black: 0 # tab-bar foreground color
     red: 1
     green: 2 # tab-bar background color
     yellow: 3
@@ -60,7 +60,7 @@ themes:
     cyan: 6
     white: 7
     orange: 208
-    gray: 247 # tab-bar foreground color
+    gray: 247
 ```
 
 - Copy complied plugin to the plugins directory
@@ -71,5 +71,5 @@ cp target/wasm32-wasi/release/z-tab-bar.wasm ~/.zellij/plugins
 
 ## roadmap
 
-- [] config driven options for colors
-- [] config driven options to customize statusline (hostname, time, etc)
+- [ ] config driven options for colors
+- [ ] config driven options to customize statusline (hostname, time, etc)

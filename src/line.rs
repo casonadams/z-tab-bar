@@ -158,7 +158,7 @@ fn tab_line_prefix(session_name: Option<&str>, palette: Palette, cols: usize) ->
     if let Some(name) = session_name {
         let name_part = format!("[{}] ", name);
         let name_part_len = name_part.width();
-        let name_part_styled_text = style!(palette.gray, palette.green).bold().paint(name_part);
+        let name_part_styled_text = style!(palette.black, palette.green).bold().paint(name_part);
         if cols.saturating_sub(prefix_text_len) >= name_part_len {
             parts.push(LinePart {
                 part: name_part_styled_text.to_string(),

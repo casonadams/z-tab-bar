@@ -28,11 +28,11 @@ pub fn render_tab(
     let mut tab_text_len = text.width() + 2 + separator.width() * 2; // 2 for left and right separators, 2 for the text padding
     let tab_styled_text;
     if active {
-        tab_styled_text = style!(palette.gray, background_color)
+        tab_styled_text = style!(palette.black, background_color)
             .bold()
             .paint(format!("*{} ", text));
     } else {
-        tab_styled_text = style!(palette.gray, background_color)
+        tab_styled_text = style!(palette.black, background_color)
             .bold()
             .paint(format!("{} ", text));
     };
