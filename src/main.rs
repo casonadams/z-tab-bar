@@ -86,7 +86,7 @@ impl ZellijPlugin for State {
       active_tab_index = t.position;
       let tab = tab_style(
         &mut t.clone(),
-        self.mode_info.palette,
+        self.mode_info.style.colors,
         t.other_focused_clients.as_slice(),
       );
       all_tabs.push(tab);
@@ -96,7 +96,7 @@ impl ZellijPlugin for State {
       all_tabs,
       active_tab_index,
       cols.saturating_sub(1),
-      self.mode_info.palette,
+      self.mode_info.style.colors,
     );
     let mut s = String::new();
     let mut len_cnt = 0;
@@ -114,7 +114,7 @@ impl ZellijPlugin for State {
       }
       len_cnt += bar_part.len;
     }
-    match self.mode_info.palette.green {
+    match self.mode_info.style.colors.green {
       PaletteColor::Rgb((r, g, b)) => {
         println!("{}\u{1b}[48;2;{};{};{}m\u{1b}[0K", s, r, g, b);
       }
