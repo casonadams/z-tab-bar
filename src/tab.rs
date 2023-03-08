@@ -17,45 +17,70 @@ fn cursors(focused_clients: &[ClientId], palette: Palette) -> (Vec<ANSIString>, 
   (cursors, len)
 }
 
-pub fn render_tab(tab_info: &mut TabInfo, palette: Palette, focused_clients: &[ClientId]) -> LinePart {
+pub fn render_tab(text: String, tab: &TabInfo, _is_alternate_tab: bool, palette: Palette, separator: &str) -> LinePart {
+  let focused_clients = tab.other_focused_clients.as_slice();
+  let separator_width = separator.width();
   let background_color = palette.green;
-  let mut tab_text = tab_info.name.clone();
-  let mut tab_text_len = tab_info.name.width() + 2; // 2 for left and right separators, 2 for the text padding
-  if tab_info.active {
-    tab_text = format!("{}*", tab_text);
-  }
-  if tab_info.is_fullscreen_active {
-    tab_text = format!("{}Z", tab_text);
-  }
-  if tab_info.is_sync_panes_active {
-    tab_text = format!("{}S", tab_text);
-  }
-
-  let tab_styled = style!(palette.black, background_color).paint(&tab_text);
+  let foreground_color = match palette.theme_hue {
+    ThemeHue::Dark => palette.black,
+    ThemeHue::Light => palette.black,
+  };
+  let mut tab_text_len = text.width() + (separator_width * 2) + 2; // +2 for padding
+  let tab_styled_text = style!(foreground_color, background_color)
+    .bold()
+    .paint(format!(" {} ", text));
 
   let tab_styled_text = if !focused_clients.is_empty() {
     let (cursor_section, extra_length) = cursors(focused_clients, palette);
     tab_text_len += extra_length;
-    let cursor_beginning = style!(palette.black, background_color).paint("|");
-    let cursor_end = style!(palette.black, background_color).paint("| ");
-    let mut tmp = vec![tab_styled, cursor_beginning];
-    for section in cursor_section {
-      tmp.push(section);
-    }
-    tmp.push(cursor_end);
-
-    ANSIStrings(&tmp).to_string()
+    let mut s = String::new();
+    let cursor_beginning = style!(foreground_color, background_color).bold().paint("[").to_string();
+    let cursor_section = ANSIStrings(&cursor_section).to_string();
+    let cursor_end = style!(foreground_color, background_color).bold().paint("]").to_string();
+    s.push_str(&tab_styled_text);
+    s.push_str(&cursor_beginning);
+    s.push_str(&cursor_section);
+    s.push_str(&cursor_end);
+    s
   } else {
-    let end = style!(palette.black, background_color).paint(" ");
-    ANSIStrings(&[tab_styled, end]).to_string()
+    ANSIStrings(&[tab_styled_text]).to_string()
   };
 
   LinePart {
     part: tab_styled_text,
     len: tab_text_len,
+    tab_index: Some(tab.position),
   }
 }
 
-pub fn tab_style(tab_info: &mut TabInfo, palette: Palette, focused_clients: &[ClientId]) -> LinePart {
-  render_tab(tab_info, palette, focused_clients)
+pub fn tab_style(
+  mut tabname: String,
+  tab: &TabInfo,
+  mut is_alternate_tab: bool,
+  palette: Palette,
+  capabilities: PluginCapabilities,
+) -> LinePart {
+  let separator = "";
+
+  if tabname.contains("Tab #") {
+    tabname = format!("{}:tab", tab.position);
+  } else {
+    tabname = format!("{}:{}", tab.position, tab.name.to_owned().replace(' ', "_"));
+  }
+
+  if tab.active {
+    tabname.push('*');
+  }
+  if tab.is_fullscreen_active {
+    tabname.push('Z');
+  }
+  if tab.is_sync_panes_active {
+    tabname.push('S');
+  }
+  // we only color alternate tabs differently if we can't use the arrow fonts to separate them
+  if !capabilities.arrow_fonts {
+    is_alternate_tab = false;
+  }
+
+  render_tab(tabname, tab, is_alternate_tab, palette, separator)
 }

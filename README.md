@@ -17,55 +17,64 @@ cargo build --release
 - Create a common place for plugins
 
 ```sh
-mkdir -p ~/.zellij/plugins
+mkdir -p ~/.config/zellij/plugins
 ```
 
 - Update `~/.config/zellij/layouts/default.yaml`
 
-- **NOTE** USER_HOME needs to be the full path for now
+- **NOTE** HOME needs to be the full path for now
 
-```yaml
----
-template:
-  direction: Horizontal
-  parts:
-    - direction: Vertical
-      body: true
-    - direction: Vertical
-      borderless: true
-      split_size:
-        Fixed: 1
-      run:
-        plugin:
-          location: "file:USER_HOME/.zellij/plugins/z-tab-bar.wasm"
-session:
-  name: "0"
-  attach: true
+```kdl
+// ~/.config/zellij/config.kdl
+
+default_layout "z-tab-bar"
+
+plugins {
+  tab-bar { path "tab-bar"; }
+  z-tab-bar { path "$HOME/.config/zellij/plugins/z-tab-bar"; }
+  status-bar { path "status-bar"; }
+  strider { path "strider"; }
+  compact-bar { path "compact-bar"; }
+}
+```
+
+```kdl
+// ~/.config/zellij/themes/z-tab-bar.kdl
+layout {
+  pane
+  pane size=1 borderless=true {
+    plugin location="zellij:z-tab-bar"
+  }
+}
+session_name "0"
+attach_to_session true
 ```
 
 - Suggested theme
 
-```yaml
-themes:
-  default:
-    fg: 7
-    bg: 24
-    black: 0 # tab-bar foreground color
-    red: 1
-    green: 2 # tab-bar background color
-    yellow: 3
-    blue: 4
-    magenta: 5
-    cyan: 6
-    white: 7
-    orange: 208
-    gray: 247
+```kdl
+// ~/.config/zellij/themes/default.kdl
+themes {
+  default {
+    fg 7
+    bg 24
+    black 0
+    red 1
+    green 2
+    yellow 3
+    blue 4
+    magenta 5
+    cyan 6
+    white 7
+    orange 208
+  }
+}
 ```
 
 - Copy complied plugin to the plugins directory
 
 ```sh
-cp target/wasm32-wasi/release/z-tab-bar.wasm ~/.zellij/plugins
+cp target/wasm32-wasi/release/z-tab-bar.wasm ~/.config/zellij/plugins
 ```
 
 ## roadmap

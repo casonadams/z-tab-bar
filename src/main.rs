@@ -13,6 +13,7 @@ use crate::tab::tab_style;
 pub struct LinePart {
   part: String,
   len: usize,
+  tab_index: Option<usize>,
 }
 
 #[derive(Default)]
@@ -21,8 +22,10 @@ struct State {
   active_tab_idx: usize,
   mode_info: ModeInfo,
   mouse_click_pos: usize,
-  should_render: bool,
+  should_change_tab: bool,
 }
+
+static ARROW_SEPARATOR: &str = "";
 
 register_plugin!(State);
 
@@ -32,48 +35,51 @@ impl ZellijPlugin for State {
     subscribe(&[EventType::TabUpdate, EventType::ModeUpdate, EventType::Mouse]);
   }
 
-  fn update(&mut self, event: Event) {
+  fn update(&mut self, event: Event) -> bool {
+    let mut should_render = false;
     match event {
-      Event::ModeUpdate(mode_info) => self.mode_info = mode_info,
-      Event::TabUpdate(tabs) => {
-        self.active_tab_idx = tabs.iter().position(|t| t.active).unwrap() + 1;
-        let mut new_tabs: Vec<TabInfo> = vec![];
-        for (i, tab) in tabs.iter().enumerate() {
-          let tab_name;
-          if tab.name.contains("Tab #") {
-            tab_name = format!("{}:tab", i);
-          } else {
-            tab_name = format!("{}:{}", i, tab.name.to_owned().replace(" ", "_"));
-          }
-          let temp = TabInfo {
-            position: tab.position,
-            name: tab_name,
-            active: tab.active,
-            panes_to_hide: tab.panes_to_hide,
-            is_fullscreen_active: tab.is_fullscreen_active,
-            is_sync_panes_active: tab.is_sync_panes_active,
-            are_floating_panes_visible: tab.are_floating_panes_visible,
-            other_focused_clients: tab.clone().other_focused_clients,
-          };
-          new_tabs.push(temp);
+      Event::ModeUpdate(mode_info) => {
+        if self.mode_info != mode_info {
+          should_render = true;
         }
-        self.tabs = new_tabs;
+        self.mode_info = mode_info;
+      }
+      Event::TabUpdate(tabs) => {
+        if let Some(active_tab_index) = tabs.iter().position(|t| t.active) {
+          // tabs are indexed starting from 1 so we need to add 1
+          let active_tab_idx = active_tab_index + 1;
+          if self.active_tab_idx != active_tab_idx || self.tabs != tabs {
+            should_render = true;
+          }
+          self.active_tab_idx = active_tab_idx;
+          self.tabs = tabs;
+        } else {
+          eprintln!("Could not find active tab.");
+        }
       }
       Event::Mouse(me) => match me {
         Mouse::LeftClick(_, col) => {
+          if self.mouse_click_pos != col {
+            should_render = true;
+            self.should_change_tab = true;
+          }
           self.mouse_click_pos = col;
-          self.should_render = true;
         }
         Mouse::ScrollUp(_) => {
+          should_render = true;
           switch_tab_to(min(self.active_tab_idx + 1, self.tabs.len()) as u32);
         }
         Mouse::ScrollDown(_) => {
+          should_render = true;
           switch_tab_to(max(self.active_tab_idx.saturating_sub(1), 1) as u32);
         }
         _ => {}
       },
-      _ => unimplemented!(), // FIXME: This should be unreachable, but this could be cleaner
+      _ => {
+        eprintln!("Got unrecognized event: {:?}", event);
+      }
     }
+    should_render
   }
 
   fn render(&mut self, _rows: usize, cols: usize) {
@@ -82,13 +88,25 @@ impl ZellijPlugin for State {
     }
     let mut all_tabs: Vec<LinePart> = vec![];
     let mut active_tab_index = 0;
+    let mut is_alternate_tab = false;
     for t in &mut self.tabs {
-      active_tab_index = t.position;
+      let mut tabname = t.name.clone();
+      if t.active && self.mode_info.mode == InputMode::RenameTab {
+        if tabname.is_empty() {
+          tabname = String::from("Enter name...");
+        }
+        active_tab_index = t.position;
+      } else if t.active {
+        active_tab_index = t.position;
+      }
       let tab = tab_style(
-        &mut t.clone(),
+        tabname,
+        t,
+        is_alternate_tab,
         self.mode_info.style.colors,
-        t.other_focused_clients.as_slice(),
+        self.mode_info.capabilities,
       );
+      is_alternate_tab = !is_alternate_tab;
       all_tabs.push(tab);
     }
     let tab_line = tab_line(
@@ -97,31 +115,32 @@ impl ZellijPlugin for State {
       active_tab_index,
       cols.saturating_sub(1),
       self.mode_info.style.colors,
+      self.mode_info.capabilities,
     );
     let mut s = String::new();
     let mut len_cnt = 0;
-    for (idx, bar_part) in tab_line.iter().enumerate() {
+    for bar_part in tab_line {
       s = format!("{}{}", s, &bar_part.part);
 
-      if self.should_render
-        && self.mouse_click_pos > len_cnt
-        && self.mouse_click_pos <= len_cnt + bar_part.len
-        && idx > 2
+      if self.should_change_tab
+        && self.mouse_click_pos >= len_cnt
+        && self.mouse_click_pos < len_cnt + bar_part.len
+        && bar_part.tab_index.is_some()
       {
-        // First three elements of tab_line are "Zellij", session name and empty thing, hence the idx > 2 condition.
-        // Tabs are indexed starting from 1, therefore we need subtract 2 below.
-        switch_tab_to(TryInto::<u32>::try_into(idx).unwrap() - 2);
+        // Tabs are indexed starting from 1, therefore we need add 1 to tab_index.
+        let tab_index: u32 = bar_part.tab_index.unwrap().try_into().unwrap();
+        switch_tab_to(tab_index + 1);
       }
       len_cnt += bar_part.len;
     }
     match self.mode_info.style.colors.green {
       PaletteColor::Rgb((r, g, b)) => {
-        println!("{}\u{1b}[48;2;{};{};{}m\u{1b}[0K", s, r, g, b);
+        print!("{}\u{1b}[48;2;{};{};{}m\u{1b}[0K", s, r, g, b);
       }
       PaletteColor::EightBit(color) => {
-        println!("{}\u{1b}[48;5;{}m\u{1b}[0K", s, color);
+        print!("{}\u{1b}[48;5;{}m\u{1b}[0K", s, color);
       }
     }
-    self.should_render = false;
+    self.should_change_tab = false;
   }
 }
